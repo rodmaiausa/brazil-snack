@@ -1377,7 +1377,7 @@ function sendWAPed(id){
   const phone=(cli?.wa_us||cli?.wa_br||'').replace(/\D/g,'');
   const isBizWA=p.type==='invoice'||DB.clientes.find(c=>c.id===p.cliId)?.type==='business';
   const its=(p.items||[]).map(i=>`• ${i.nome} ×${i.qtd} ——— ${fmt(i.sub)}`).join('\n');
-  const trackUrl='https://jovial-puppy-d4a5bf.netlify.app/?track='+p.id;
+  const trackUrl='https://rodmaiausa.github.io/brazil-snack/?track='+p.id;
   const greeting=isBizWA?`Dear ${cli?.nome||''},`:`Hi ${cli?.nome||''},`;
   const msg=encodeURIComponent(`🫓 *BRAZIL SNACK*\n_Authentic Brazilian Cheese Bread • EST. 2019_\n━━━━━━━━━━━━━━━━\n${isBizWA?'📄 *INVOICE #'+p.id:'📋 *Order #'+p.id}* | 📅 ${fdate(p.data)}\n━━━━━━━━━━━━━━━━\n${greeting}\n\n${its}\n${p.desc>0?`\n🎟️ Discount: -${fmt(p.desc)}`:''}\n━━━━━━━━━━━━━━━━\n💰 *TOTAL: ${fmt(p.total)}*\n${payDisplay(p.pag)}\n${p.end?`📍 Delivery: ${p.end}`:''}\n\n🔍 *Track your order:*\n${trackUrl}\n━━━━━━━━━━━━━━━━\n${DB.cfg.footer||'Thank you! 🇧🇷❤️'}`);
   if(phone)window.open(`https://wa.me/${phone}?text=${msg}`,'_blank');
@@ -1385,7 +1385,7 @@ function sendWAPed(id){
 }
 function sendWA(){if(window.curPed)sendWAPed(window.curPed);}
 function copyTrackLinkPed(id){
-  const url='https://jovial-puppy-d4a5bf.netlify.app/?track='+id;
+  const url='https://rodmaiausa.github.io/brazil-snack/?track='+id;
   navigator.clipboard?.writeText(url).then(()=>toast('🔗 Link copied! Send to customer.','info')).catch(()=>prompt('Link de rastreio:',url));
 }
 function copyTrackLink(){if(window.curPed)copyTrackLinkPed(window.curPed);}
@@ -1444,7 +1444,7 @@ ${p.desc>0?`<div class="ir" style="color:#2a8040;"><span>Discount ${p.cupom?'('+
 <div class="pr">${p.pag==='cash'?'💵 Cash':p.pag==='zelle'?'📲 Zelle':p.pag==='transfer'?'🏦 Transfer':'💳 Card'}</div>
 <div class="sd"></div>
 <div class="ft">${DB.cfg.footer||'Thank you! 🇧🇷❤️'}</div>
-<div class="tk">🔍 Track: https://jovial-puppy-d4a5bf.netlify.app/?track=${p.id}</div>
+<div class="tk">🔍 Track: https://rodmaiausa.github.io/brazil-snack/?track=${p.id}</div>
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`);win.document.close();
 }
