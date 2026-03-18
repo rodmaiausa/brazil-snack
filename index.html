@@ -120,15 +120,15 @@
 
 <style>
 :root{
-  --br-dark:#140800;--br:#271005;--br-mid:#3a1808;--br-light:#522210;
-  --card:#321508;--card2:#3e1c0b;
-  --bdr:#7a4020;--bdr2:#4a2010;
-  --gold:#c9920a;--gold-l:#f5c518;--gold-b:#ffe566;--gold-p:#f0d080;
-  --cream:#f8edd0;--cream2:#e8d4a0;
-  --text:#f5e6c8;--text2:#c4a060;--text3:#8a5a30;
-  --red:#e05252;--blue:#4a90d9;--green:#2da854;--green-l:#3dc86a;
-  --orange:#f08030;--purple:#b07fff;
-  --r:12px;--sh:0 8px 32px rgba(0,0,0,.65);
+  --br-dark:#f9f5f0;--br:#f3ede6;--br-mid:#ebe3da;--br-light:#e0d4c8;
+  --card:#ffffff;--card2:#faf7f4;
+  --bdr:#ddd0c4;--bdr2:#c8b8a8;
+  --gold:#a0680a;--gold-l:#7a4e08;--gold-b:#c8820e;--gold-p:#8a5800;
+  --cream:#2a1a0a;--cream2:#5a3e28;
+  --text:#1a1008;--text2:#6b4e38;--text3:#9a7a60;
+  --red:#c0392b;--blue:#2471a3;--green:#1e8449;--green-l:#27ae60;
+  --orange:#ca6f1e;--purple:#7d3c98;
+  --r:10px;--sh:0 2px 12px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margem:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:#fdf6ec;color:var(--text);min-height:100vh;overflow-x:hidden;}
@@ -178,14 +178,14 @@ nav{flex:1;padding:10px 8px;overflow-y:auto;}
 .btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:6px;font-size:14px;}
 
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
-.sc{background:linear-gradient(135deg,var(--card)0%,var(--br-mid)100%);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.3);}
+.sc{background:linear-gradient(135deg,var(--card)0%,var(--br-mid)100%);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 .sc::after{content:'';position:absolute;bottom:-12px;right:-12px;width:60px;height:60px;border-radius:50%;opacity:.07;}
 .sc.gold::after{background:var(--gold-l);}.sc.cr::after{background:var(--cream);}.sc.b::after{background:var(--blue);}.sc.r::after{background:var(--red);}.sc.g::after{background:var(--green);}
 .sc-lbl{font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
 .sc-val{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold-l);}
 .sc-sub{font-size:10.5px;color:var(--text3);margem-top:2px;}
 
-.tw{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+.tw{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow-x:auto;box-shadow:0 2px 8px rgba(0,0,0,.08);}
 table{width:100%;border-collapse:collapse;}
 thead{background:var(--br-mid);}
 th{padding:10px 13px;font-size:10px;font-weight:700;color:var(--gold);text-align:left;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bdr);}
@@ -559,13 +559,13 @@ tr:hover td{background:var(--card2);}
       <div class="tab" onclick="tabRep(this,'marketing')">📣 Marketing</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;padding:12px 18px;background:var(--card);border-bottom:1px solid var(--bdr);">
-      <label style="font-size:12px;color:var(--text2);">From:</label>
+      <label style="font-size:12px;color:var(--text2);">De:</label>
       <input type="date" id="repFrom" style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;" onchange="renderRep(window._repTab||'geral')">
-      <label style="font-size:12px;color:var(--text2);">To:</label>
+      <label style="font-size:12px;color:var(--text2);">Até:</label>
       <input type="date" id="repTo" style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;" onchange="renderRep(window._repTab||'geral')">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('repFrom').value='';document.getElementById('repTo').value='';renderRep(window._repTab||'geral')">Clear</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('repFrom').value='';document.getElementById('repTo').value='';renderRep(window._repTab||'geral')">Limpar</button>
     </div>
-    <div id="repContent"></div>
+    <div id="repContent" style="padding:16px;overflow-x:hidden;"></div>
   </div>
 
   <!-- PRECIFICAÇÃO -->
