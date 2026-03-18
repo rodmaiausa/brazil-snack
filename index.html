@@ -917,7 +917,6 @@ function renderDash(){
   const rec=DB.pedidos.slice(-6).reverse();
   const dO=document.getElementById('dashOrders');if(dO)dO.innerHTML=rec.length?rec.map(p=>`<tr><td><strong style="color:var(--gold-l);">#${p.id}</strong></td><td>${cliNome(p.cliId)}</td><td style="color:var(--gold-l);font-weight:700;">${fmt(p.total)}</td><td>${p.pag||'—'}</td><td>${stTag(p.status)}</td><td><button class="btn btn-ghost btn-sm btn-icon" onclick="verPed('${p.id}')">👁️</button></td></tr>`).join(''):`<tr><td colspan="6" class="no-data">Nenhum pedido ainda.</td></tr>`;
   updBadge();
-  window.renderDashSafe&&window.renderDashSafe();
 }
 
 // ===== LUCRO =====
@@ -1768,10 +1767,9 @@ function saveGoalLive(){
 
 // ===== ENHANCED RENDER DASH =====
 window.renderDashSafe=function(){
-  if(typeof renderDash==='function')renderDash();
-  if(typeof renderGoalBar==='function')renderGoalBar();
-  if(typeof renderBirthdayAlerts==='function')renderBirthdayAlerts();
-  if(typeof renderReminderAlerts==='function')renderReminderAlerts();
+  if(window.curPage==='dashboard'){
+    if(typeof renderDash==='function')renderDash();
+  }
 };
 
 // ===== CUSTOMER SAVE + CLEAR + TYPE =====
@@ -1881,8 +1879,13 @@ function renderReminderAlerts(){
 // ===== INIT =====
 window.fbReady=false;
 
-var loadTxtEl=document.getElementById('loadTxt');
-if(loadTxtEl)loadTxtEl.textContent='Connecting...';
+// Initialize the app - show dashboard
+document.addEventListener('DOMContentLoaded', function(){
+  go('dashboard');
+  if(typeof applyCfg==='function') applyCfg();
+  if(typeof checkUrlTrack==='function') checkUrlTrack();
+  if(typeof checkSurveyUrl==='function') checkSurveyUrl();
+});
 </script>
 
 <div id="surveyPage" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fff5e8,#fdefd8);padding:30px 20px;">
