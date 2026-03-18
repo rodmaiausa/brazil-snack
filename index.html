@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- Brazil Snack v3.0 | Build: 2026-03-17 | No Login -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brazil Snack — Sistema de Management</title>
+<title>Brazil Snack — Management System</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <!-- FIREBASE SDK -->
@@ -80,12 +81,26 @@
     if(window.curPage === 'vendas' || window.curPage === 'prevenda') window.popSelects();
     window.renderDashSafe();
   });
+  var _loadingHidden = false;
+  function _hideLoading(){
+    if(_loadingHidden) return;
+    _loadingHidden = true;
+    var l = document.getElementById('loading');
+    if(l){l.classList.add('hide');setTimeout(function(){if(l&&l.parentNode)l.parentNode.removeChild(l);},500);}
+    if(typeof window.renderDash==='function') window.renderDash();
+    if(typeof window.renderGoalBar==='function') window.renderGoalBar();
+    if(typeof window.renderBirthdayAlerts==='function') window.renderBirthdayAlerts();
+    if(typeof window.renderReminderAlerts==='function') window.renderReminderAlerts();
+    if(typeof window.checkUrlTrack==='function') window.checkUrlTrack();
+    if(typeof window.checkSurveyUrl==='function') window.checkSurveyUrl();
+  }
   window.FB.listen('pedidos', data => {
     window.DB.pedidos = Array.isArray(data)?data:(data?Object.values(data):[]);
-    if(window.curPage === 'pedidos') { window.renderPipe(); window.renderPed(); }
-    if(window.curPage === 'rotas') window.renderRota();
-    window.renderDashSafe();
-    window.updBadge();
+    if(window.curPage === 'pedidos') { window.renderPipe && window.renderPipe(); window.renderPed && window.renderPed(); }
+    if(window.curPage === 'rotas') window.renderRota && window.renderRota();
+    window.renderDashSafe && window.renderDashSafe();
+    window.updBadge && window.updBadge();
+    _hideLoading();
   });
   window.FB.listen('prevendas', data => {
     window.DB.prevendas = data;
@@ -113,8 +128,11 @@
   // Signal Firebase is ready
   window.fbReady = true;
   document.getElementById('sync-dot').style.background = '#3dc86a';
-  document.getElementById('sync-txt').textContent = 'Sincronizado ✓';
+  document.getElementById('sync-txt').textContent = 'Connected ✓';
   console.log('Firebase connected!');
+  
+  // Fallback: if pedidos never fires (empty DB), hide after 3s
+  setTimeout(function(){ _hideLoading(); }, 3000);
 </script>
 
 <style>
@@ -359,7 +377,7 @@ tr:hover td{background:#fdf6ec!important;}
   </div>
   <div class="spin"></div>
   <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--gold-l);">Brazil Snack</div>
-  <div style="font-size:12px;color:var(--text2);margin-top:6px;" id="loadTxt">Conectando ao servidor...</div>
+  <div style="font-size:12px;color:var(--text2);margin-top:6px;" id="loadTxt">Connecting to server...</div>
 </div>
 
 <!-- SIDEBAR -->
@@ -370,7 +388,7 @@ tr:hover td{background:#fdf6ec!important;}
     <div class="logo-sub">Authentic Brazilian Cheese Bread</div>
     <div class="sync-bar">
       <div id="sync-dot"></div>
-      <span id="sync-txt">Conectando...</span>
+      <span id="sync-txt">Connecting...</span>
     </div>
   </div>
   <nav>
@@ -379,9 +397,9 @@ tr:hover td{background:#fdf6ec!important;}
     <div class="nsec">Cadastros</div>
     <div class="ni" onclick="go('clientes')"><span class="ic">👥</span>Clientes</div>
     <div class="ni" onclick="go('produtos')"><span class="ic">🛍️</span>Produtos</div>
-    <div class="ni" onclick="go('usuarios')"><span class="ic">👤</span>Usuários</div>
+    <div class="ni" onclick="go('usuarios')"><span class="ic">👤</span>Users</div>
     <div class="nsec">Vendas</div>
-    <div class="ni" onclick="go('prevenda')"><span class="ic">🔮</span>Pré-Venda</div>
+    <div class="ni" onclick="go('prevenda')"><span class="ic">🔮</span>Pre-Sale</div>
     <div class="ni" onclick="go('vendas')"><span class="ic">💳</span>New Sale</div>
     <div class="ni" onclick="go('pedidos')"><span class="ic">📦</span>Pedidos <span class="nbadge" id="bdg">0</span></div>
     <div class="ni" onclick="go('posvenda')"><span class="ic">⭐</span>Post-Sale</div>
@@ -389,10 +407,10 @@ tr:hover td{background:#fdf6ec!important;}
     <div class="ni" onclick="go('rotas')"><span class="ic">🗺️</span>Rotas</div>
     <div class="nsec">Management</div>
     <div class="ni" onclick="go('cupons')"><span class="ic">🎟️</span>Cupons</div>
-    <div class="ni" onclick="go('relatorios')"><span class="ic">📈</span>Relatórios</div>
-    <div class="ni" onclick="go('precificacao')"><span class="ic">🧮</span>Precificação</div>
+    <div class="ni" onclick="go('relatorios')"><span class="ic">📈</span>Reports</div>
+    <div class="ni" onclick="go('precificacao')"><span class="ic">🧮</span>Pricing</div>
     <div class="nsec">Config</div>
-    <div class="ni" onclick="go('config')"><span class="ic">⚙️</span>Configurações</div>
+    <div class="ni" onclick="go('config')"><span class="ic">⚙️</span>Settings</div>
   </nav>
   <div class="sfoot">
     <div class="upill">
@@ -465,8 +483,8 @@ tr:hover td{background:#fdf6ec!important;}
 
   <!-- PRÉ-VENDA -->
   <div class="page" id="pg-prevenda">
-    <div class="sec-head"><div class="sec-title">Pre-Sale</div><button class="btn btn-gold" onclick="openModal('mPV');popSelects()">+ Nova Pré-Venda</button></div>
-    <div class="alert-info">💡 Reserve produtos. Converta em venda após confirmação do pagamento.</div>
+    <div class="sec-head"><div class="sec-title">Pre-Sale</div><button class="btn btn-gold" onclick="openModal('mPV');popSelects()">+ Nova Pre-Sale</button></div>
+    <div class="alert-info">💡 Reserve produtos. Convert to sale after payment confirmation.</div>
     <div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Produto</th><th>Qtd</th><th>Total</th><th>Date</th><th></th></tr></thead><tbody id="tbPV"></tbody></table></div>
   </div>
 
@@ -509,7 +527,7 @@ tr:hover td{background:#fdf6ec!important;}
           </div>
           <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">Cupom</div>
           <div style="display:flex;gap:7px;margin-bottom:10px;">
-            <input type="text" id="vCupom" placeholder="Código" style="flex:1;background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:7px 11px;color:var(--cream);font-size:12.5px;outline:none;">
+            <input type="text" id="vCupom" placeholder="Code" style="flex:1;background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:7px 11px;color:var(--cream);font-size:12.5px;outline:none;">
             <button class="btn btn-ghost btn-sm" onclick="applyCupom()">Aplicar</button>
           </div>
           <div id="cupomMsg" style="margin-bottom:10px;font-size:12px;"></div>
@@ -598,12 +616,12 @@ tr:hover td{background:#fdf6ec!important;}
 
   <!-- PRECIFICAÇÃO -->
   <div class="page" id="pg-precificacao">
-    <div class="sec-head"><div class="sec-title">🧮 Precificação</div></div>
+    <div class="sec-head"><div class="sec-title">🧮 Pricing</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="calc-box">
         <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">Custos</div>
         <div class="form-grid">
-          <div class="fg"><label>Name</label><input type="text" id="cNome" value="Pão de Queijo" oninput="calcP()"></div>
+          <div class="fg"><label>Name</label><input type="text" id="cNome" value="Cheese Bread" oninput="calcP()"></div>
           <div class="fg"><label>Qtd/bag</label><input type="number" id="cQtd" value="100" oninput="calcP()"></div>
           <div class="fg"><label>Ingredientes ($)</label><input type="number" id="cIng" value="12.00" step="0.01" oninput="calcP()"></div>
           <div class="fg"><label>Embalagem ($)</label><input type="number" id="cEmb" value="1.50" step="0.01" oninput="calcP()"></div>
@@ -616,12 +634,12 @@ tr:hover td{background:#fdf6ec!important;}
         <div style="margin-top:12px;"><button class="btn btn-gold btn-sm" onclick="savePrecoProd()">💾 Save como Produto</button></div>
       </div>
       <div class="calc-box">
-        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">Simulação</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">Simulation</div>
         <div id="precosRef" style="font-size:12.5px;line-height:2;margin-bottom:12px;"></div>
         <div class="divider"></div>
         <div class="form-grid">
           <div class="fg"><label>Bags/semana</label><input type="number" id="simS" value="5" oninput="calcSim()"></div>
-          <div class="fg"><label>Preço venda ($)</label><input type="number" id="simP" value="45" oninput="calcSim()"></div>
+          <div class="fg"><label>Sale Price ($)</label><input type="number" id="simP" value="45" oninput="calcSim()"></div>
         </div>
         <div id="simRes" style="margin-top:10px;background:var(--br-mid);border-radius:7px;padding:12px;border:1px solid var(--bdr);"></div>
       </div>
@@ -633,7 +651,7 @@ tr:hover td{background:#fdf6ec!important;}
     <div class="sec-head"><div class="sec-title">Settings</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div class="tw" style="padding:20px;">
-        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">🏪 Negócio</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">🏪 Business</div>
         <div class="form-grid">
           <div class="fg full"><label>Name</label><input type="text" id="cfNome" value="Brazil Snack"></div>
           <div class="fg full"><label>Address base (rotas)</label><input type="text" id="cfEnd" placeholder="Address de partida"></div>
@@ -645,8 +663,8 @@ tr:hover td{background:#fdf6ec!important;}
       </div>
       <div class="tw" style="padding:20px;">
         <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:14px;">☁️ Firebase</div>
-        <div class="alert-info">✅ Dados sincronizando em tempo real com o Firebase.<br>Abra em qualquer dispositivo — tudo estará lá!</div>
-        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:10px;margin-top:14px;">🖨️ Impressão</div>
+        <div class="alert-info">✅ Dados sincronizando em tempo real com o Firebase.<br>Abra em quaany device — everything will be there!</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--gold-l);margin-bottom:10px;margin-top:14px;">🖨️ Printing</div>
         <div class="form-grid">
           <div class="fg full"><label>Formato</label><select id="cfFmt"><option value="80mm">Thermal 80mm</option><option value="58mm">Thermal 58mm</option><option value="a4">A4 Normal</option></select></div>
             <div class="fg"><label>🎯 Monthly Sales Goal ($)</label>
@@ -736,10 +754,10 @@ tr:hover td{background:#fdf6ec!important;}
   <input type="hidden" id="prodId">
   <div class="form-grid">
     <div class="fg full"><label>Name</label><input type="text" id="prodNome"></div>
-    <div class="fg full"><label>Descrição</label><input type="text" id="prodDesc"></div>
+    <div class="fg full"><label>Description</label><input type="text" id="prodDesc"></div>
     <div class="fg"><label>Qtd por bag</label><input type="number" id="prodQtd" value="100"></div>
     <div class="fg"><label>Custo total ($)</label><input type="number" id="prodCusto" value="22.50" step="0.01"></div>
-    <div class="fg"><label>Preço venda ($)</label><input type="number" id="prodPreco" value="45.00" step="0.01"></div>
+    <div class="fg"><label>Sale Price ($)</label><input type="number" id="prodPreco" value="45.00" step="0.01"></div>
     <div class="fg"><label>Estoque (bags)</label><input type="number" id="prodEst" value="10"></div>
     <div class="fg"><label>Categoria</label><select id="prodCat"><option>Salgado</option><option>Doce</option><option>Bebida</option><option>Outro</option></select></div>
   </div>
@@ -764,7 +782,7 @@ tr:hover td{background:#fdf6ec!important;}
 </div></div>
 
 <div class="mover" id="mPV"><div class="modal" style="max-width:500px;">
-  <div class="mhead"><div class="mtitle">🔮 Pré-Venda</div><button class="mclose" onclick="closeModal('mPV')">✕</button></div>
+  <div class="mhead"><div class="mtitle">🔮 Pre-Sale</div><button class="mclose" onclick="closeModal('mPV')">✕</button></div>
   <div class="form-grid">
     <div class="fg full"><label>Cliente</label><select id="pvCli"><option value="">— Select —</option></select></div>
     <div class="fg"><label>Produto</label><select id="pvProd" onchange="pvCalc()"><option value="">— Select —</option></select></div>
@@ -804,7 +822,7 @@ tr:hover td{background:#fdf6ec!important;}
 <div class="mover" id="mCup"><div class="modal" style="max-width:460px;">
   <div class="mhead"><div class="mtitle">🎟️ Cupom</div><button class="mclose" onclick="closeModal('mCup')">✕</button></div>
   <div class="form-grid">
-    <div class="fg"><label>Código</label><input type="text" id="cupCode" placeholder="BRASIL10" style="text-transform:uppercase;font-family:'Playfair Display',serif;font-size:15px;"></div>
+    <div class="fg"><label>Code</label><input type="text" id="cupCode" placeholder="BRASIL10" style="text-transform:uppercase;font-family:'Playfair Display',serif;font-size:15px;"></div>
     <div class="fg"><label>Tipo</label><select id="cupTipo"><option value="percent">% Desconto</option><option value="fixed">$ Fixo</option></select></div>
     <div class="fg"><label>Valor</label><input type="number" id="cupVal" value="10" step="0.01"></div>
     <div class="fg"><label>Max uses (0=∞)</label><input type="number" id="cupMax" value="0"></div>
@@ -884,7 +902,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 window.addEventListener('click',e=>{if(e.target.classList.contains('mover'))e.target.classList.remove('open');});
 
 // ===== NAVIGATION =====
-const titles={dashboard:'Dashboard',clientes:'Clientes',produtos:'Produtos',usuarios:'Usuários',prevenda:'Pré-Venda',vendas:'New Sale',pedidos:'Pedidos',posvenda:'Post-Sale',rotas:'Rotas',cupons:'Cupons',relatorios:'Relatórios',precificacao:'Precificação',config:'Configurações'};
+const titles={dashboard:'Dashboard',clientes:'Clientes',produtos:'Produtos',usuarios:'Users',prevenda:'Pre-Sale',vendas:'New Sale',pedidos:'Pedidos',posvenda:'Post-Sale',rotas:'Rotas',cupons:'Cupons',relatorios:'Reports',precificacao:'Pricing',config:'Settings'};
 function go(p){
   window.curPage=p;
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
@@ -1078,7 +1096,7 @@ async function savePV(){
   const p=DB.produtos.find(x=>x.id===prod);const q=parseInt(document.getElementById('pvQtd').value)||1;
   const id=genId('PV',DB.prevendas);
   await window.FB?.saveItem('prevendas',id,{id,cliId:cli,prodId:prod,qtd:q,total:p?p.preco*q:0,obs:document.getElementById('pvObs').value,data:today(),st:'aberta'});
-  closeModal('mPV');toast('Pré-venda registrada! ☁️');
+  closeModal('mPV');toast('Pre-Sale registrada! ☁️');
 }
 window.renderPV=function(){
   const tb=document.getElementById('tbPV');if(!tb)return;
@@ -1092,7 +1110,7 @@ async function convPV(id){
   const p=DB.produtos.find(x=>x.id===pv.prodId);if(!p)return toast('Produto não encontrado.','err');
   const nid=genId('ORD',DB.pedidos);
   const ped={id:nid,cliId:pv.cliId,items:[{prodId:pv.prodId,nome:p.nome,qtd:pv.qtd,preco:p.preco,sub:p.preco*pv.qtd}],
-    total:pv.total,sub:pv.total,desc:0,pag:'dinheiro',status:'gerado',data:today(),end:'',obs:'De Pré-Venda #'+pv.id,
+    total:pv.total,sub:pv.total,desc:0,pag:'dinheiro',status:'gerado',data:today(),end:'',obs:'De Pre-Sale #'+pv.id,
     hist:[{s:'gerado',d:new Date().toLocaleString('pt-BR')}],cupom:''};
   await window.FB?.saveItem('pedidos',nid,ped);
   await window.FB?.delItem('prevendas',id);
@@ -1260,7 +1278,8 @@ function printOrder(){
   const fmt2=DB.cfg.fmt||'80mm';const isT=fmt2!=='a4';const w=fmt2==='58mm'?'58mm':fmt2==='80mm'?'80mm':'210mm';
   const logo=getLogo();
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  win.document.write(`<!DOCTYPE html>
+<!-- Brazil Snack v3.0 | Build: 2026-03-17 | No Login --><html><head><meta charset="UTF-8"><style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:${isT?'monospace':'Georgia,serif'};font-size:${isT?'11px':'13px'};width:${w};margin:0 auto;padding:${isT?'8px':'28px'};color:#1a0800;background:#fff;}
 .lw{text-align:center;margin-bottom:${isT?'8px':'14px'};}
@@ -1789,12 +1808,11 @@ function saveGoalLive(){
 }
 
 // ===== ENHANCED RENDER DASH =====
-var _origRenderDash=window.renderDash;
 window.renderDashSafe=function(){
-  if(_origRenderDash)_origRenderDash();
-  renderGoalBar();
-  renderBirthdayAlerts();
-  renderReminderAlerts();
+  if(typeof renderDash==='function')renderDash();
+  if(typeof renderGoalBar==='function')renderGoalBar();
+  if(typeof renderBirthdayAlerts==='function')renderBirthdayAlerts();
+  if(typeof renderReminderAlerts==='function')renderReminderAlerts();
 };
 
 // ===== CUSTOMER SAVE + CLEAR + TYPE =====
@@ -1815,47 +1833,10 @@ function setCType(t){
     if(bizF)bizF.style.display='block';
   }
 }
-function clearCli(){
-  ['cliId','cliNome','cliEmail','cliEnd','cliWA_US','cliWA_BR','cliObs','cliBizNum','cliBirthday'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var cr=document.getElementById('cliReminder');if(cr)cr.value='0';
-  setCType('individual');
-}
-async function saveCli(){
-  var nome2=document.getElementById('cliNome').value.trim();
-  if(!nome2)return toast('Name is required.','err');
-  var cid2=document.getElementById('cliId').value||genId('CLI',DB.clientes);
-  var obj={id:cid2,nome:nome2,
-    email:document.getElementById('cliEmail').value,
-    birthday:document.getElementById('cliBirthday')?.value||'',
-    end:document.getElementById('cliEnd').value,
-    wa_us:document.getElementById('cliWA_US').value,
-    wa_br:document.getElementById('cliWA_BR').value,
-    obs:document.getElementById('cliObs').value,
-    type:(document.getElementById('cliType')||{value:'individual'}).value,
-    bizNum:(document.getElementById('cliBizNum')||{value:''}).value,
-    reminder:parseInt((document.getElementById('cliReminder')||{value:0}).value)||0,
-    criado:today()};
-  await window.FB?.saveItem('clientes',cid2,obj);
-  closeModal('mCli');toast('Customer saved! ☁️');
-}
-function editCli(id){
-  var cl=DB.clientes.find(function(x){return x.id===id;});if(!cl)return;
-  document.getElementById('cliId').value=cl.id;
-  document.getElementById('cliNome').value=cl.nome;
-  document.getElementById('cliEmail').value=cl.email||'';
-  document.getElementById('cliEnd').value=cl.end||'';
-  document.getElementById('cliWA_US').value=cl.wa_us||'';
-  document.getElementById('cliWA_BR').value=cl.wa_br||'';
-  document.getElementById('cliObs').value=cl.obs||'';
-  var bn=document.getElementById('cliBizNum');if(bn)bn.value=cl.bizNum||'';
-  var bd=document.getElementById('cliBirthday');if(bd)bd.value=cl.birthday||'';
-  var cr=document.getElementById('cliReminder');if(cr)cr.value=cl.reminder||0;
-  setCType(cl.type||'individual');
-  openModal('mCli');
-}
-async function delCli(id){
-  if(confirm('Delete customer?')){await window.FB?.delItem('clientes',id);toast('Customer removed.');}
-}
+
+
+
+
 
 // ===== ADDRESS AUTO-FILL =====
 function fillCustAddress(){
@@ -1940,16 +1921,9 @@ function renderReminderAlerts(){
 
 // ===== INIT =====
 window.fbReady=false;
-// Hide loading after 3s max
-setTimeout(()=>{
-  const l=document.getElementById('loading');
-  if(l){l.classList.add('hide');setTimeout(()=>l.remove(),500);}
-  renderDash();
-  checkUrlTrack();
-  checkSurveyUrl();
-  setStar(5);
-},2500);
-document.getElementById('loadTxt').textContent='Carregando dados...';
+// Loading is handled by Firebase pedidos listener + 3s fallback
+var loadTxtEl=document.getElementById('loadTxt');
+if(loadTxtEl)loadTxtEl.textContent='Connecting...';
 </script>
 
 <div id="surveyPage" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fff5e8,#fdefd8);padding:30px 20px;">
