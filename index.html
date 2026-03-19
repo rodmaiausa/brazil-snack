@@ -1362,7 +1362,7 @@ function fillCliEnd(endId, cliId){
   const cliSel = document.getElementById(cliId);
   const endEl  = document.getElementById(endId);
   if(!cliSel || !endEl) return;
-  const cli = Object.values(DB.clientes||{}).find(x=>x.id===cliSel.value);
+  const cli = (DB.clientes||[]).find(x=>x.id===cliSel.value);
   if(cli && cli.end) endEl.value = cli.end;
 }
 // ===== INIT =====
