@@ -948,23 +948,20 @@ async function savePV(){
 }
 window.renderPV=function(){
   const tb=document.getElementById('tbPV');if(!tb)return;
+  const pi={dinheiro:'💵 Cash',zelle:'📲 Zelle',cartao:'💳 Card'};
   tb.innerHTML=DB.prevendas.length?DB.prevendas.map(pv=>`<tr>
-    <td style="color:var(--gold-l);">#${pv.id}</td><td>${cliNome(pv.cliId)}</td><td>${prodNome(pv.prodId)}</td>
-    <td>${pv.qtd}</td><td style="color:var(--gold-l);font-weight:700;">${fmt(pv.total)}</td><td>${fdate(pv.data)}</td>
-    <td><div style="display:flex;gap:4px;"><button class="btn btn-gold btn-sm" onclick="convPV('${pv.id}')">→ Venda</button><button class="btn btn-red btn-sm btn-icon" onclick="delPV('${pv.id}')">🗑️</button></div></td></tr>`).join(''):`<tr><td colspan="7" class="no-data">Nenhuma pré-venda.</td></tr>`;
-}
-async function convPV(id){
-  const pv=DB.prevendas[id]||Object.values(DB.prevendas||{}).find(x=>x.id===id);if(!pv)return;
-  const p=DB.produtos[pv.prodId]||Object.values(DB.produtos||{}).find(x=>x.id===pv.prodId);
-  if(!p)return toast('Produto não encontrado.','err');
-  const pedId=genId('ORD',DB.pedidos);
-  const ped={id:pedId,cliId:pv.cliId,items:[{prodId:pv.prodId,nome:p.nome,qtd:pv.qtd,preco:p.preco,sub:p.preco*pv.qtd}],
-    total:pv.total,sub:pv.total,desc:0,pag:pv.pag||'dinheiro',status:'gerado',data:today(),
-    end:pv.end||'',date:pv.date||'',obs:'De Pré-Venda #'+pv.id+(pv.obs?' | '+pv.obs:''),
-    hist:[{s:'gerado',d:new Date().toLocaleString('pt-BR')}],cupom:''};
-  window.FB?.saveItem('pedidos',pedId,ped);
-  window.FB?.deleteItem('prevendas',id);
-  toast('Pedido #'+pedId+' criado! ☁️');
+    <td style="color:var(--gold-l);">#${pv.id}</td>
+    <td>${cliNome(pv.cliId)}</td>
+    <td>${prodNome(pv.prodId)}</td>
+    <td>${pv.qtd}</td>
+    <td style="color:var(--gold-l);font-weight:700;">${fmt(pv.total)}</td>
+    <td style="font-size:12px;">${pi[pv.pag]||pv.pag||'—'}</td>
+    <td style="font-size:11.5px;color:var(--cream2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pv.end||'—'}</td>
+    <td>${fdate(pv.data)}</td>
+    <td><div style="display:flex;gap:4px;">
+      <button class="btn btn-gold btn-sm" onclick="convPV('${pv.id}')">→ Venda</button>
+      <button class="btn btn-red btn-sm btn-icon" onclick="delPV('${pv.id}')">🗑️</button>
+    </div></td></tr>`).join(''):`<tr><td colspan="9" class="no-data">Nenhuma pré-venda.</td></tr>`;
 }
 async function delPV(id){if(confirm('Excluir?')){await window.FB?.delItem('prevendas',id);}}
 
@@ -1056,8 +1053,9 @@ async function saveStatus(){
   const id=document.getElementById('stId').value;const s=document.getElementById('stVal').value;
   const p=DB.pedidos.find(x=>x.id===id);if(!p)return;
   const hist=[...(p.hist||[]),{s,d:new Date().toLocaleString('pt-BR')}];
-  await window.FB?.updItem('pedidos',id,{status:s,hist});
+  window.FB?.updItem('pedidos',id,{status:s,hist});
   closeModal('mSt');toast('Status atualizado! ☁️');
+  if(s==='entregue') promptThankWA(id);
 }
 async function delPed(id){if(confirm('Excluir pedido?')){await window.FB?.delItem('pedidos',id);toast('Pedido removido.');}}
 
@@ -1354,6 +1352,51 @@ function checkUrlTrack(){
     document.getElementById('trackInput').value=tid.toUpperCase();
     setTimeout(doTrack,1500);// Wait for FB data
   }
+}
+
+
+
+function convPV(id){
+  const pv=(DB.prevendas||[]).find(x=>x.id===id);
+  if(!pv)return toast('Pré-venda não encontrada.','err');
+  const p=(DB.produtos||[]).find(x=>x.id===pv.prodId);
+  if(!p)return toast('Produto não encontrado.','err');
+  const pedId=genId('ORD',DB.pedidos);
+  const ped={id:pedId,cliId:pv.cliId,
+    items:[{prodId:pv.prodId,nome:p.nome,qtd:pv.qtd,preco:p.preco,sub:p.preco*pv.qtd}],
+    total:pv.total,sub:pv.total,desc:0,
+    pag:pv.pag||'dinheiro',status:'gerado',data:today(),
+    end:pv.end||'',date:pv.date||'',
+    obs:'De Pré-Venda #'+pv.id+(pv.obs?' | '+pv.obs:''),
+    hist:[{s:'gerado',d:new Date().toLocaleString('pt-BR')}],cupom:''};
+  window.FB?.saveItem('pedidos',pedId,ped);
+  window.FB?.delItem('prevendas',id);
+  toast('Pedido #'+pedId+' criado! ☁️');
+}
+
+
+function promptThankWA(id){
+  setTimeout(function(){
+    var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
+    var cli=(DB.clientes||[]).find(function(c){return c.id===p.cliId;});
+    var div=document.createElement('div');
+    div.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:12px;padding:16px 20px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:9999;min-width:300px;max-width:360px;';
+    div.innerHTML='<div style="font-family:Playfair Display,serif;font-weight:700;color:var(--gold-l);margin-bottom:6px;">🫓 Pedido entregue!</div><div style="font-size:13px;color:var(--cream2);margin-bottom:14px;">Enviar mensagem de agradecimento para <strong style="color:var(--cream);">'+(cli?cli.nome:'cliente')+'</strong>?</div><div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="this.closest(\'div[style]\').remove()" style="background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--cream2);">Não</button><button onclick="sendWAThank(\''+id+'\');this.closest(\'div[style]\').remove()" style="background:linear-gradient(135deg,#25d366,#1da851);border:none;border-radius:7px;padding:6px 16px;font-size:12px;cursor:pointer;color:#fff;font-weight:600;">📲 Enviar WA</button></div>';
+    document.body.appendChild(div);
+    setTimeout(function(){if(div.parentNode)div.remove();},10000);
+  },400);
+}
+
+function sendWAThank(id){
+  var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
+  var cli=(DB.clientes||[]).find(function(c){return c.id===p.cliId;});
+  var phone=((cli&&(cli.wa_us||cli.wa_br))||'').replace(/\D/g,'');
+  var its=(p.items||[]).map(function(i){return '• '+i.nome+' x'+i.qtd;}).join('\n');
+  var footer=DB.cfg&&DB.cfg.footer?DB.cfg.footer:'Obrigada pela preferência! 🇧🇷❤️';
+  var nome=cli?cli.nome:'';
+  var msg='🫓 *BRAZIL SNACK*\n_Authentic Brazilian Cheese Bread • EST. 2019_\n━━━━━━━━━━━━━━━━\nOlá *'+nome+'*! 😊\n\nSeu pedido *#'+p.id+'* foi entregue com sucesso! ✅\n\n'+its+'\n💰 *Total: '+fmt(p.total)+'*\n━━━━━━━━━━━━━━━━\nEsperamos que você aproveite muito! 🇧🇷❤️\n\nNos conte o que achou — sua opinião é muito importante para nós! ⭐\n\n'+footer;
+  if(phone) window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+  else{navigator.clipboard&&navigator.clipboard.writeText(msg);toast('Mensagem copiada!','info');}
 }
 
 
