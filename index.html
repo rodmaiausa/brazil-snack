@@ -409,7 +409,7 @@ tr:hover td{background:var(--card2);}
       <div>
         <div class="tw" style="padding:18px;margin-bottom:14px;">
           <div style="font-weight:700;color:var(--gold-l);font-size:13px;margin-bottom:12px;">1 · Cliente</div>
-          <div class="fg"><label>Selecionar cliente</label><select id="vCli"><option value="">— Selecionar —</option></select></div>
+          <div class="fg"><label>Selecionar cliente</label><select id="vCli" onchange="fillCliEnd('vEnd','vCli')"><option value="">— Selecionar —</option></select></div>
           <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="openModal('mCli');clearCli()">+ Novo cliente</button></div>
         </div>
         <div class="tw" style="padding:18px;margin-bottom:14px;">
@@ -668,7 +668,7 @@ tr:hover td{background:var(--card2);}
 <div class="mover" id="mPV"><div class="modal" style="max-width:500px;">
   <div class="mhead"><div class="mtitle">🔮 Pré-Venda</div><button class="mclose" onclick="closeModal('mPV')">✕</button></div>
   <div class="form-grid">
-    <div class="fg full"><label>Cliente</label><select id="pvCli"><option value="">— Selecionar —</option></select></div>
+    <div class="fg full"><label>Cliente</label><select id="pvCli" onchange="fillCliEnd('pvEnd','pvCli')"><option value="">— Selecionar —</option></select></div>
     <div class="fg"><label>Produto</label><select id="pvProd" onchange="pvCalc()"><option value="">— Selecionar —</option></select></div>
     <div class="fg"><label>Quantidade</label><input type="number" id="pvQtd" value="1" min="1" oninput="pvCalc()"></div>
     <div class="fg full"><label>Total estimado</label><input type="text" id="pvTot" readonly style="background:var(--br-dark);font-weight:700;color:var(--gold-l);"></div>
@@ -1356,6 +1356,15 @@ function checkUrlTrack(){
   }
 }
 
+
+// ===== AUTO-FILL ADDRESS FROM CLIENT =====
+function fillCliEnd(endId, cliId){
+  const cliSel = document.getElementById(cliId);
+  const endEl  = document.getElementById(endId);
+  if(!cliSel || !endEl) return;
+  const cli = Object.values(DB.clientes||{}).find(x=>x.id===cliSel.value);
+  if(cli && cli.end) endEl.value = cli.end;
+}
 // ===== INIT =====
 window.fbReady=false;
 // Hide loading after 3s max
