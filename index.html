@@ -114,6 +114,8 @@
   window.fbReady = true;
   document.getElementById('sync-dot').style.background = '#3dc86a';
   document.getElementById('sync-txt').textContent = 'Sincronizado ✓';
+  // Hide loading screen as soon as Firebase is ready
+  window.hideLoading();
   console.log('Firebase connected!');
 </script>
 
@@ -359,6 +361,7 @@ tr:hover td{background:var(--card2);}
 
   <!-- DASHBOARD -->
   <div class="page on" id="pg-dashboard">
+    <div id="unpaidAlert" style="display:none;background:rgba(202,111,30,.12);border:1.5px solid var(--orange);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--orange);gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;"></div>
     <div class="stat-grid" id="statsGrid"></div>
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px;">
       <div class="tw" style="padding:18px;">
@@ -466,10 +469,11 @@ tr:hover td{background:var(--card2);}
     <div class="pipeline" id="pipeline"></div>
     <div class="tabs" id="pedTabs">
       <div class="tab on" onclick="filterPed(this,'todos')">Todos</div>
-      <div class="tab" onclick="filterPed(this,'gerado')">Gerado</div>
-      <div class="tab" onclick="filterPed(this,'pendente')">Pendente</div>
-      <div class="tab" onclick="filterPed(this,'entrega')">Em Entrega</div>
-      <div class="tab" onclick="filterPed(this,'entregue')">Entregue</div>
+      <div class="tab" onclick="filterPed(this,'gerado')">📋 Gerado</div>
+      <div class="tab" onclick="filterPed(this,'entrega')">🚗 Entrega</div>
+      <div class="tab" onclick="filterPed(this,'entregue')">✅ Entregue</div>
+      <div class="tab" style="color:var(--orange);" onclick="filterPed(this,'nao_pago')">⏳ Não Pagos</div>
+      <div class="tab" onclick="filterPed(this,'cancelado')">❌ Cancelado</div>
     </div>
     <div class="search-bar"><input id="sPed" placeholder="🔍 Buscar pedido..." oninput="renderPed()"></div>
     <div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Pag.</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tbPed"></tbody></table></div>
@@ -516,6 +520,7 @@ tr:hover td{background:var(--card2);}
     <div class="sec-head"><div class="sec-title">Relatórios</div></div>
     <div class="tabs" id="repTabs">
       <div class="tab on" onclick="tabRep(this,'geral')">Geral</div>
+      <div class="tab" style="color:var(--orange);" onclick="tabRep(this,'cobrancas')">⏳ Cobranças</div>
       <div class="tab" onclick="tabRep(this,'lucro')">Lucro</div>
       <div class="tab" onclick="tabRep(this,'produtos')">Produtos</div>
       <div class="tab" onclick="tabRep(this,'clientes')">Clientes</div>
@@ -739,17 +744,25 @@ tr:hover td{background:var(--card2);}
   </div>
 </div></div>
 
-<div class="mover" id="mSt"><div class="modal" style="max-width:380px;">
-  <div class="mhead"><div class="mtitle">↕️ Status</div><button class="mclose" onclick="closeModal('mSt')">✕</button></div>
+<div class="mover" id="mSt"><div class="modal" style="max-width:420px;">
+  <div class="mhead"><div class="mtitle">↕️ Atualizar Pedido</div><button class="mclose" onclick="closeModal('mSt')">✕</button></div>
   <input type="hidden" id="stId">
-  <div class="fg"><label>Novo status</label>
-    <select id="stVal">
-      <option value="gerado">📋 Pedido Gerado</option>
-      <option value="pendente">⏳ Pendente</option>
-      <option value="entrega">🚗 Saiu para Entrega</option>
-      <option value="entregue">✅ Entregue</option>
-      <option value="cancelado">❌ Cancelado</option>
-    </select>
+  <div class="form-grid">
+    <div class="fg full"><label>Status de Entrega</label>
+      <select id="stVal">
+        <option value="gerado">📋 Pedido Gerado</option>
+        <option value="entrega">🚗 Saiu para Entrega</option>
+        <option value="entregue">✅ Entregue</option>
+        <option value="cancelado">❌ Cancelado</option>
+      </select>
+    </div>
+    <div class="fg full"><label>Status de Pagamento</label>
+      <select id="stPag">
+        <option value="pendente">⏳ Aguardando Pagamento</option>
+        <option value="pago">💰 Pago</option>
+        <option value="parcial">💸 Parcialmente Pago</option>
+      </select>
+    </div>
   </div>
   <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
     <button class="btn btn-ghost btn-sm" onclick="closeModal('mSt')">Cancelar</button>
@@ -780,9 +793,15 @@ function cliNome(id){return DB.clientes.find(c=>c.id===id)?.nome||id||'—';}
 function prodNome(id){return DB.produtos.find(p=>p.id===id)?.nome||id||'—';}
 function getLogo(){return DB.cfg.logo||LOGO;}
 function stTag(s){
-  const m={gerado:'t-gen',pendente:'t-pend',entrega:'t-deliv',entregue:'t-done',cancelado:'t-cancel',presale:'t-pre'};
-  const l={gerado:'📋 Gerado',pendente:'⏳ Pendente',entrega:'🚗 Em Entrega',entregue:'✅ Entregue',cancelado:'❌ Cancelado',presale:'🔮 Pré-Venda'};
+  const m={gerado:'t-gen',entrega:'t-deliv',entregue:'t-done',cancelado:'t-cancel',presale:'t-pre'};
+  const l={gerado:'📋 Gerado',entrega:'🚗 Em Entrega',entregue:'✅ Entregue',cancelado:'❌ Cancelado',presale:'🔮 Pré-Venda'};
   return `<span class="tag ${m[s]||'t-gen'}">${l[s]||s}</span>`;
+}
+function pagTag(ps){
+  if(!ps||ps==='pendente')return '<span class="tag" style="background:rgba(202,111,30,.15);color:var(--orange);border:1px solid rgba(202,111,30,.3);">⏳ Pag. Pendente</span>';
+  if(ps==='pago')return '<span class="tag" style="background:rgba(30,132,73,.15);color:var(--green-l);border:1px solid rgba(30,132,73,.3);">💰 Pago</span>';
+  if(ps==='parcial')return '<span class="tag" style="background:rgba(124,60,152,.15);color:var(--purple);border:1px solid rgba(124,60,152,.3);">💸 Parcial</span>';
+  return '';
 }
 function genId(prefix, arr){return prefix+String((arr.length+1)+Date.now()%1000).padStart(4,'0');}
 function toast(msg,t='ok'){
@@ -828,11 +847,23 @@ function popSelects(){
 // ===== DASHBOARD =====
 function renderDash(){
   const peds=DB.pedidos.filter(p=>p.status!=='cancelado');
+  const naoPagos=DB.pedidos.filter(p=>(!p.pagStatus||p.pagStatus==='pendente')&&p.status!=='cancelado'&&p.status!=='gerado');
+  const totalNaoPago=naoPagos.reduce((a,p)=>a+parseFloat(p.total||0),0);
   const total=peds.reduce((a,p)=>a+parseFloat(p.total||0),0);
   const hoje=DB.pedidos.filter(p=>p.data===today()).reduce((a,p)=>a+parseFloat(p.total||0),0);
   const ativos=DB.pedidos.filter(p=>!['entregue','cancelado'].includes(p.status)).length;
   const lb=peds.reduce((a,p)=>a+calcLB(p),0);
   const sg=document.getElementById('statsGrid');if(!sg)return;
+  // Alert banner for unpaid
+  const alertEl=document.getElementById('unpaidAlert');
+  if(alertEl){
+    if(naoPagos.length>0){
+      alertEl.style.display='flex';
+      alertEl.innerHTML='<span>⚠️ <strong>'+naoPagos.length+' pedido(s) sem pagamento</strong> — '+fmt(totalNaoPago)+' a receber</span><button class="btn btn-sm" style="background:var(--orange);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;" onclick="filterPed(null,\'nao_pago\');go(\'pedidos\')">Ver agora →</button>';
+    } else {
+      alertEl.style.display='none';
+    }
+  }
   sg.innerHTML=`
     <div class="sc gold"><div class="sc-lbl">Faturamento</div><div class="sc-val">${fmt(total)}</div><div class="sc-sub">${peds.length} pedidos</div></div>
     <div class="sc g"><div class="sc-lbl">Lucro Bruto</div><div class="sc-val">${fmt(lb)}</div><div class="sc-sub">Margem ${total>0?Math.round(lb/total*100):0}%</div></div>
@@ -1039,7 +1070,12 @@ window.renderPipe=function(){
 function fPedK(k){document.querySelectorAll('#pedTabs .tab').forEach(t=>{t.classList.remove('on');if(t.getAttribute('onclick')?.includes("'"+k+"'"))t.classList.add('on');});window.pedF=k;renderPed();}
 window.renderPed=function(){
   const q=(document.getElementById('sPed')?.value||'').toLowerCase();
-  const list=DB.pedidos.filter(p=>{if(window.pedF!=='todos'&&p.status!==window.pedF)return false;if(q&&!cliNome(p.cliId).toLowerCase().includes(q)&&!p.id.toLowerCase().includes(q))return false;return true;}).reverse();
+  const list=DB.pedidos.filter(p=>{
+    if(window.pedF==='nao_pago'){if(p.pagStatus==='pago'||p.status==='cancelado')return false;}
+    else if(window.pedF!=='todos'&&p.status!==window.pedF)return false;
+    if(q&&!cliNome(p.cliId).toLowerCase().includes(q)&&!p.id.toLowerCase().includes(q))return false;
+    return true;
+  }).reverse();
   const tb=document.getElementById('tbPed');if(!tb)return;
   tb.innerHTML=list.length?list.map(p=>`<tr>
     <td><strong style="color:var(--gold-l);">#${p.id}</strong><div style="font-size:10px;color:var(--text2);">${fdate(p.data)}</div></td>
@@ -1047,7 +1083,7 @@ window.renderPed=function(){
     <td style="font-size:11px;color:var(--cream2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(p.items||[]).map(i=>i.nome).join(', ')}</td>
     <td style="color:var(--gold-l);font-weight:700;">${fmt(p.total)}</td>
     <td style="font-size:12px;">${p.pag}</td>
-    <td>${stTag(p.status)}</td>
+    <td>${stTag(p.status)} ${pagTag(p.pagStatus)}</td>
     <td><div style="display:flex;gap:3px;">
       <button class="btn btn-ghost btn-sm btn-icon" title="Ver" onclick="verPed('${p.id}')">👁️</button>
       <button class="btn btn-ghost btn-sm btn-icon" title="Status" onclick="openSt('${p.id}')">↕️</button>
@@ -1057,14 +1093,27 @@ window.renderPed=function(){
     </div></td></tr>`).join(''):`<tr><td colspan="7" class="no-data">Nenhum pedido.</td></tr>`;
   updBadge();
 }
-function openSt(id){document.getElementById('stId').value=id;const p=DB.pedidos.find(x=>x.id===id);if(p)document.getElementById('stVal').value=p.status;openModal('mSt');}
+function openSt(id){
+  document.getElementById('stId').value=id;
+  const p=DB.pedidos.find(x=>x.id===id);
+  if(p){
+    document.getElementById('stVal').value=p.status;
+    const sp=document.getElementById('stPag');
+    if(sp)sp.value=p.pagStatus||'pendente';
+  }
+  openModal('mSt');
+}
 async function saveStatus(){
-  const id=document.getElementById('stId').value;const s=document.getElementById('stVal').value;
+  const id=document.getElementById('stId').value;
+  const s=document.getElementById('stVal').value;
+  const sp=document.getElementById('stPag');
+  const pagStatus=sp?sp.value:'pendente';
   const p=DB.pedidos.find(x=>x.id===id);if(!p)return;
-  const hist=[...(p.hist||[]),{s,d:new Date().toLocaleString('pt-BR')}];
-  window.FB?.updItem('pedidos',id,{status:s,hist});
+  const hist=[...(p.hist||[]),{s,pag:pagStatus,d:new Date().toLocaleString('pt-BR')}];
+  window.FB?.updItem('pedidos',id,{status:s,pagStatus,hist});
   closeModal('mSt');toast('Status atualizado! ☁️');
   if(s==='entregue') promptThankWA(id);
+  if(pagStatus==='pendente'&&(s==='entregue'||s==='entrega')) promptCobrancaWA(id);
 }
 async function delPed(id){if(confirm('Excluir pedido?')){await window.FB?.delItem('pedidos',id);toast('Pedido removido.');}}
 
@@ -1238,6 +1287,8 @@ function tabRep(el,t){document.querySelectorAll('#repTabs .tab').forEach(x=>x.cl
 function renderRep(t){
   const el=document.getElementById('repContent');if(!el)return;
   const peds=DB.pedidos.filter(p=>p.status!=='cancelado');
+  const naoPagos=DB.pedidos.filter(p=>(!p.pagStatus||p.pagStatus==='pendente')&&p.status!=='cancelado'&&p.status!=='gerado');
+  const totalNaoPago=naoPagos.reduce((a,p)=>a+parseFloat(p.total||0),0);
   const total=peds.reduce((a,p)=>a+parseFloat(p.total||0),0);
   const lb=peds.reduce((a,p)=>a+calcLB(p),0);
   const despesas=total-lb;
@@ -1265,6 +1316,23 @@ function renderRep(t){
   } else if(t==='clientes'){
     const cm={};peds.forEach(p=>{const n=cliNome(p.cliId);if(!cm[n])cm[n]={peds:0,total:0};cm[n].peds++;cm[n].total+=parseFloat(p.total||0);});
     el.innerHTML=`<div class="tw"><table><thead><tr><th>Cliente</th><th>Pedidos</th><th>Total</th><th>Ticket Médio</th></tr></thead><tbody>${Object.entries(cm).sort((a,b)=>b[1].total-a[1].total).map(([n,v])=>`<tr><td><strong style="color:var(--gold-p);">${n}</strong></td><td>${v.peds}</td><td style="color:var(--gold-l);font-weight:700;">${fmt(v.total)}</td><td>${fmt(v.total/v.peds)}</td></tr>`).join('')||'<tr><td colspan="4" class="no-data">Sem dados.</td></tr>'}</tbody></table></div>`;
+  } else if(t==='cobrancas'){
+    const np=DB.pedidos.filter(p=>(!p.pagStatus||p.pagStatus==='pendente')&&p.status!=='cancelado'&&p.status!=='gerado');
+    const totalNP=np.reduce((a,p)=>a+parseFloat(p.total||0),0);
+    el.innerHTML='<div class="alert-info" style="border-color:var(--orange);background:rgba(202,111,30,.08);margin-bottom:16px;">⚠️ <strong>'+np.length+' pedidos aguardando pagamento</strong> — Total a receber: <strong style="color:var(--orange);">'+fmt(totalNP)+'</strong></div>'+
+    '<div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>Entrega</th><th>Status Pag.</th><th>Ações</th></tr></thead><tbody>'+
+    (np.length?np.map(function(p){return '<tr>'+
+      '<td style="color:var(--gold-l);">#'+p.id+'</td>'+
+      '<td>'+cliNome(p.cliId)+'</td>'+
+      '<td style="color:var(--gold-l);font-weight:700;">'+fmt(p.total)+'</td>'+
+      '<td>'+fdate(p.data)+'</td>'+
+      '<td>'+pagTag(p.pagStatus||'pendente')+'</td>'+
+      '<td><div style="display:flex;gap:4px;">'+
+        '<button class="btn btn-sm" style="background:rgba(37,211,102,.13);color:#25d366;border:1px solid rgba(37,211,102,.25);font-size:11px;" onclick="sendWACobranca(this)" data-id="'+p.id+'">📲 Cobrar</button>'+
+        '<button class="btn btn-gold btn-sm" style="font-size:11px;" onclick="marcarPago(this)" data-id="'+p.id+'">💰 Marcar Pago</button>'+
+      '</div></td>'+
+    '</tr>';}).join(''):'<tr><td colspan="6" class="no-data">🎉 Nenhum pagamento pendente!</td></tr>')+
+    '</tbody></table></div>';
   } else if(t==='pagamentos'){
     const pays={dinheiro:0,zelle:0,cartao:0};peds.forEach(p=>{pays[p.pag]=(pays[p.pag]||0)+parseFloat(p.total||0);});
     const pi={dinheiro:'💵',zelle:'📲',cartao:'💳'};
@@ -1387,10 +1455,29 @@ function convPV(elOrId){
 function promptThankWA(id){
   setTimeout(function(){
     var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
-    var cli=(DB.clientes||[]).find(function(c){return c.id===p.cliId;});
+    var cli=(DB.clientes||[]).find(function(x){return x.id===p.cliId;});
+    var nome=cli?cli.nome:'cliente';
     var div=document.createElement('div');
+    div.setAttribute('data-pid',id);
     div.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:12px;padding:16px 20px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:9999;min-width:300px;max-width:360px;';
-    div.innerHTML='<div style="font-family:Playfair Display,serif;font-weight:700;color:var(--gold-l);margin-bottom:6px;">🫓 Pedido entregue!</div><div style="font-size:13px;color:var(--cream2);margin-bottom:14px;">Enviar mensagem de agradecimento para <strong style="color:var(--cream);">'+(cli?cli.nome:'cliente')+'</strong>?</div><div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="this.closest(\'div[style]\').remove()" style="background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--cream2);">Não</button><button onclick="sendWAThank(\''+id+'\');this.closest(\'div[style]\').remove()" style="background:linear-gradient(135deg,#25d366,#1da851);border:none;border-radius:7px;padding:6px 16px;font-size:12px;cursor:pointer;color:#fff;font-weight:600;">📲 Enviar WA</button></div>';
+    var cancelBtn=document.createElement('button');
+    cancelBtn.textContent='Não';
+    cancelBtn.style.cssText='background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--cream2);';
+    cancelBtn.onclick=function(){div.remove();};
+    var sendBtn=document.createElement('button');
+    sendBtn.textContent='📲 Enviar WA';
+    sendBtn.style.cssText='background:linear-gradient(135deg,#25d366,#1da851);border:none;border-radius:7px;padding:6px 16px;font-size:12px;cursor:pointer;color:#fff;font-weight:600;';
+    sendBtn.onclick=function(){sendWAThank(id);div.remove();};
+    var titleDiv=document.createElement('div');
+    titleDiv.style.cssText='font-family:Playfair Display,serif;font-weight:700;color:var(--gold-l);margin-bottom:6px;';
+    titleDiv.textContent='🫓 Pedido entregue!';
+    var bodyDiv=document.createElement('div');
+    bodyDiv.style.cssText='font-size:13px;color:var(--cream2);margin-bottom:14px;';
+    bodyDiv.innerHTML='Enviar mensagem de agradecimento para <strong style="color:var(--cream);">'+nome+'</strong>?';
+    var btnRow=document.createElement('div');
+    btnRow.style.cssText='display:flex;gap:8px;justify-content:flex-end;';
+    btnRow.appendChild(cancelBtn);btnRow.appendChild(sendBtn);
+    div.appendChild(titleDiv);div.appendChild(bodyDiv);div.appendChild(btnRow);
     document.body.appendChild(div);
     setTimeout(function(){if(div.parentNode)div.remove();},10000);
   },400);
@@ -1398,16 +1485,66 @@ function promptThankWA(id){
 
 function sendWAThank(id){
   var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
-  var cli=(DB.clientes||[]).find(function(c){return c.id===p.cliId;});
+  var cli=(DB.clientes||[]).find(function(x){return x.id===p.cliId;});
   var phone=((cli&&(cli.wa_us||cli.wa_br))||'').replace(/\D/g,'');
   var its=(p.items||[]).map(function(i){return '• '+i.nome+' x'+i.qtd;}).join('\n');
   var footer=DB.cfg&&DB.cfg.footer?DB.cfg.footer:'Obrigada pela preferência! 🇧🇷❤️';
   var nome=cli?cli.nome:'';
-  var msg='🫓 *BRAZIL SNACK*\n_Authentic Brazilian Cheese Bread • EST. 2019_\n━━━━━━━━━━━━━━━━\nOlá *'+nome+'*! 😊\n\nSeu pedido *#'+p.id+'* foi entregue com sucesso! ✅\n\n'+its+'\n💰 *Total: '+fmt(p.total)+'*\n━━━━━━━━━━━━━━━━\nEsperamos que você aproveite muito! 🇧🇷❤️\n\nNos conte o que achou — sua opinião é muito importante para nós! ⭐\n\n'+footer;
+  var msg='🫓 *BRAZIL SNACK*\n_Authentic Brazilian Cheese Bread • EST. 2019_\n━━━━━━━━━━━━━━━━\nOlá *'+nome+'*! 😊\n\nSeu pedido *#'+p.id+'* foi entregue com sucesso! ✅\n\n'+its+'\n💰 *Total: '+fmt(p.total)+'*\n━━━━━━━━━━━━━━━━\nEsperamos que você aproveite muito! 🇧🇷❤️\n\nNos conte o que achou — sua opinião é muito importante! ⭐\n\n'+footer;
+  if(phone)window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
+  else{navigator.clipboard&&navigator.clipboard.writeText(msg);toast('Mensagem copiada!','info');}
+}
+
+
+
+function promptCobrancaWA(id){
+  setTimeout(function(){
+    var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
+    var cli=(DB.clientes||[]).find(function(x){return x.id===p.cliId;});
+    var nome=cli?cli.nome:'cliente';
+    var div=document.createElement('div');
+    div.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--orange);border-radius:12px;padding:16px 20px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:9999;min-width:300px;max-width:360px;';
+    var cancelBtn=document.createElement('button');
+    cancelBtn.textContent='Não';
+    cancelBtn.style.cssText='background:var(--br-mid);border:1px solid var(--bdr);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--cream2);';
+    cancelBtn.onclick=function(){div.remove();};
+    var sendBtn=document.createElement('button');
+    sendBtn.textContent='📲 Cobrar no WA';
+    sendBtn.style.cssText='background:linear-gradient(135deg,#25d366,#1da851);border:none;border-radius:7px;padding:6px 16px;font-size:12px;cursor:pointer;color:#fff;font-weight:600;';
+    sendBtn.onclick=function(){sendWACobranca(id);div.remove();};
+    var titleDiv=document.createElement('div');
+    titleDiv.style.cssText='font-family:Playfair Display,serif;font-weight:700;color:var(--orange);margin-bottom:6px;';
+    titleDiv.textContent='💰 Pagamento pendente!';
+    var bodyDiv=document.createElement('div');
+    bodyDiv.style.cssText='font-size:13px;color:var(--cream2);margin-bottom:14px;';
+    bodyDiv.innerHTML='Enviar cobrança via WhatsApp para <strong style="color:var(--cream);">'+nome+'</strong>?';
+    var btnRow=document.createElement('div');
+    btnRow.style.cssText='display:flex;gap:8px;justify-content:flex-end;';
+    btnRow.appendChild(cancelBtn);btnRow.appendChild(sendBtn);
+    div.appendChild(titleDiv);div.appendChild(bodyDiv);div.appendChild(btnRow);
+    document.body.appendChild(div);
+    setTimeout(function(){if(div.parentNode)div.remove();},12000);
+  },600);
+}
+
+function sendWACobranca(elOrId){
+  var id=typeof elOrId==='string'?elOrId:(elOrId&&elOrId.getAttribute?elOrId.getAttribute('data-id'):elOrId);
+  var p=(DB.pedidos||[]).find(function(x){return x.id===id;});if(!p)return;
+  var cli=(DB.clientes||[]).find(function(c){return c.id===p.cliId;});
+  var phone=((cli&&(cli.wa_us||cli.wa_br))||'').replace(/\D/g,'');
+  var its=(p.items||[]).map(function(i){return '• '+i.nome+' x'+i.qtd+' — '+fmt(i.sub);}).join('\n');
+  var footer=DB.cfg&&DB.cfg.footer?DB.cfg.footer:'Obrigada! 🇧🇷❤️';
+  var nome=cli?cli.nome:'';
+  var msg='🫓 *BRAZIL SNACK*\n_Authentic Brazilian Cheese Bread • EST. 2019_\n━━━━━━━━━━━━━━━━\nOlá *'+nome+'*! 😊\n\nPassando para lembrar sobre o pagamento do seu pedido *#'+p.id+'* ❤️\n\n'+its+'\n━━━━━━━━━━━━━━━━\n💰 *Total: '+fmt(p.total)+'*\n\nFormas de pagamento:\n💵 Cash\n📲 Zelle: '+(DB.cfg&&DB.cfg.wa?DB.cfg.wa:'')+'\n\nQualquer dúvida estamos à disposição! 🫓\n'+footer;
   if(phone) window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');
   else{navigator.clipboard&&navigator.clipboard.writeText(msg);toast('Mensagem copiada!','info');}
 }
 
+function marcarPago(elOrId){
+  var id=typeof elOrId==='string'?elOrId:(elOrId&&elOrId.getAttribute?elOrId.getAttribute('data-id'):elOrId);
+  window.FB?.updItem('pedidos',id,{pagStatus:'pago'});
+  toast('Pagamento confirmado! 💰');
+}
 
 // ===== AUTO-FILL ADDRESS FROM CLIENT =====
 function fillCliEnd(endId, cliId){
@@ -1419,15 +1556,15 @@ function fillCliEnd(endId, cliId){
 }
 // ===== INIT =====
 window.fbReady=false;
-// Hide loading after 3s max
-setTimeout(()=>{
+window._appStarted=false;
+window.hideLoading=function(){
   const l=document.getElementById('loading');
-  if(l){l.classList.add('hide');setTimeout(()=>l.remove(),500);}
-  renderDash();
-  checkUrlTrack();
-  setStar(5);
-},2500);
-document.getElementById('loadTxt').textContent='Carregando dados...';
+  if(l&&!l._hidden){l._hidden=true;l.classList.add('hide');setTimeout(function(){if(l.parentNode)l.remove();},500);}
+  if(!window._appStarted){window._appStarted=true;renderDash();checkUrlTrack();setStar(5);}
+};
+// Fallback: force hide after 5s if Firebase is slow
+setTimeout(function(){window.hideLoading();},5000);
+const _lt=document.getElementById('loadTxt');if(_lt)_lt.textContent='Carregando dados...';
 </script>
 </body>
 </html>
